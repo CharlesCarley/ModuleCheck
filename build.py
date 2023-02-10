@@ -1,12 +1,12 @@
 import os, github
-import Utils
+import PyUtils, git
 
 
 
 class GitHubAccount:
     def __init__(self, rootDir):
         self._account = "CharlesCarley"
-        self._home = Utils.Path(os.path.abspath(rootDir))
+        self._home = PyUtils.Path(os.path.abspath(rootDir))
         self._cred = self.home().subdir(".tokens")
 
     def home(self):
@@ -55,28 +55,32 @@ class GitHubAccount:
                 repoList[repo.name] = repo
         return repoList
 
+    def repoBaseName(self, repo):
+        name = repo.name
+        loc = name.find('.')
+        if loc != -1:
+            loc+=1
+            name = name[loc:]
+        return name
+
+
     def clone(self):
         self.home().goto()
+        repos = self.home().create("repos")
+        repos.goto()
+
         print("Cloning into", self.home())
 
         cloneList = self.repos()
         for repo in cloneList.values():
-            if (not os.path.isdir(repo.name)):
-                self.home().run("git clone %s" %repo.ssh_url)
-            else:
-                print("Skipping", repo.name, ":", repo.ssh_url)
-                print("".ljust(2, ' '), "directory exists")
-
+            rn = self.repoBaseName(repo)
+            repos.run("git clone %s %s"%(repo.ssh_url, rn))
         self.home().goto()
 
     def removeRepos(self):
         self.home().goto()
-
-        cloneList = self.repos()
-        for repo in cloneList.values():
-            print("removing repo.name ", repo.name)
-            self.home().subdir(repo.name).remove()
-
+        repos = self.home().create("repos")
+        repos.remove()
         self.home().goto()
  
 

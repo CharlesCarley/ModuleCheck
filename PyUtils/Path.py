@@ -87,8 +87,27 @@ class Path:
         return Path(result)
 
     def remove(self):
+        def onerror(func, path, exc_info):
+            """
+            Error handler for ``shutil.rmtree``.
+
+            If the error is due to an access error (read only file)
+            it attempts to add write permission and then retries.
+
+            If the error is for another reason it re-raises the error.
+            
+            Usage : ``shutil.rmtree(path, onerror=onerror)``
+            """
+            import stat
+            # Is the error an access error?
+            if not os.access(path, os.W_OK):
+                os.chmod(path, stat.S_IWUSR)
+                func(path)
+            else:
+                raise
+
         if (os.path.isdir(self._path)):
-            shutil.rmtree(self._path, ignore_errors=True)
+            shutil.rmtree(self._path, onerror=onerror, ignore_errors=False)
 
     def copyTo(self, file, toPath):
         shutil.copyfile(self.file(file), toPath.file(file))
