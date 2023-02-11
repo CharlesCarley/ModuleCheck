@@ -127,6 +127,7 @@ class Path:
         except IOError:
             msg = "Failed to change working directory to %s" % str(self)
             raise IOError(msg)
+        return self
 
     def run(self, cmd):
         subprocess.run(cmd, shell=True, env=os.environ)
