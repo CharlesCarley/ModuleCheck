@@ -1,4 +1,4 @@
-# Repo Manager
+# OutOfTheBox
 
 Batch tests a list of repositories.  
 
