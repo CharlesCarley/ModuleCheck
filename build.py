@@ -1,16 +1,17 @@
 import os, github
 import sys
 import PyUtils
+import PyUtils.Colors as c
+
 
 
 class GitHubAccount:
-
     def __init__(self, rootDir, argc, argv):
         self._argc = argc
         self._argv = argv
-        self._account = "CharlesCarley"
         self._home = PyUtils.Path(os.path.abspath(rootDir))
         self._cred = self.home().subdir(".tokens")
+        self._account = self._accountHolder()
 
     def home(self):
         return self._home
@@ -25,8 +26,18 @@ class GitHubAccount:
             token = fp.read()
             fp.close()
         except IOError:
-            print("Failed to read access token")
+            print(c.r, "Failed to read access token", c.reset)
         return token
+
+    def _accountHolder(self):
+        usr = None
+        try:
+            fp = self.credentials().open("user.txt")
+            usr = fp.read()
+            fp.close()
+        except IOError:
+            print("Failed to read user")
+        return usr
 
     def _repos(self):
         lines = []
@@ -58,18 +69,37 @@ class GitHubAccount:
             if (repo.fork): continue
             if (repo.owner.login != self._account): continue
             if repo.name in wanted:
-                print("".ljust(2, ' '), "repository:", repo.name)
                 repoList[repo.name] = repo
         return repoList
+
+
+    def _maxNameLen(self):
+        wanted = self._repos()
+        m = 0
+        for r in wanted: m = max(m, len(r))
+        return m
+
 
     def repoBaseName(self, repo):
         name = repo.name
         loc = name.find('.')
-
         if loc != -1:
             loc += 1
             name = name[loc:]
         return name
+
+
+
+    def listRepos(self):
+        print(c.g+"Repositories:", c.reset)
+
+        self.home().goto()
+        repos = self.repos()
+        mr = self._maxNameLen()
+
+        for repo in repos.values():
+            print(repo.name.ljust(mr, ' '), "->", repo.ssh_url)
+
 
     def clone(self):
         self.home().goto()
@@ -102,7 +132,42 @@ class GitHubAccount:
             repos.subdir(rn).goto().run("python gitupdate.py")
             repos.goto()
 
+    def sync(self):
+        self.clean()
+        self.home().goto()
+        repos = self.home().create("repos")
+        repos.goto()
+
+        cloneList = self.repos()
+        for repo in cloneList.values():
+            rn = self.repoBaseName(repo)
+            repos.run("git clone %s %s" % (repo.ssh_url, rn))
+            rd = repos.subdir(rn).goto()
+            rd.run("python gitupdate.py")
+            rd.run("git commit -a -m \"Update sub-modules\"")
+            rd.run("git push")
+            repos.goto()
+
+
     def build(self):
+        self.home().goto()
+        repos = self.home().create("repos")
+        repos.goto()
+
+        cloneList = self.repos()
+        for repo in cloneList.values():
+            rn = self.repoBaseName(repo)
+            print("")
+            print(c.r+"  Building repository ", c.g0, repo.ssh_url, c.reset)
+            print("")
+            print("")
+
+            bd = repos.subdir(rn).goto().create("build").goto()
+            bd.run("cmake --build .")
+            repos.goto()
+
+
+    def config(self):
         self.home().goto()
         repos = self.home().create("repos")
         repos.goto()
@@ -114,7 +179,6 @@ class GitHubAccount:
 
             bd.run("cmake -D%s_BUILD_TEST=ON -D%s_AUTO_RUN_TEST=ON .." %
                    (rn, rn))
-            bd.run("cmake --build .")
             repos.goto()
 
     def findOpt(self, opt):
@@ -132,6 +196,11 @@ class GitHubAccount:
         print("  pull   - updates submodules from .tokens/repos.txt")
         print("  clean  - removes the repos directory")
         print("  all    - builds and tests all repositories")
+        print("  config - configures all repositories with cmake")
+        print("  sync   - synchronizes all repositories to the master branch")
+        print("")
+        print("")
+        print("  ls     - lists pullable repos")
         print("  help   - displays this message")
         print("")
         print("")
@@ -147,6 +216,12 @@ def main(argc, argv):
         mgr.clean()
     elif (mgr.findOpt("all")):
         mgr.build()
+    elif (mgr.findOpt("config")):
+        mgr.config()
+    elif (mgr.findOpt("sync")):
+        mgr.sync()
+    elif (mgr.findOpt("ls")):
+        mgr.listRepos()
     else:
         mgr.usage()
 
