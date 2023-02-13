@@ -1,4 +1,4 @@
-# OutOfTheBox
+# ModuleCheck
 
 Batch tests a list of repositories.  
 
@@ -8,4 +8,10 @@ The build scripts need some setup because they have dependencies that are not in
 
 - .tokens/user.txt   GitHub user name.
 - .tokens/repos.txt  newline based list of repos to manage.
-- .tokens/pub.txt    Public GitHub persional access token. 
+- .tokens/pub.txt    GitHub personal access token.
+
+## Dependencies
+
+```sh
+pip install PyGithub
+```
