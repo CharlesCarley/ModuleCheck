@@ -117,6 +117,7 @@ class GitHubAccount:
         self.home().goto()
         repos = self.home().create("repos")
         repos.remove()
+
         self.home().goto()
         self.home().run("ls")
 
@@ -128,7 +129,18 @@ class GitHubAccount:
         cloneList = self.repos()
         for repo in cloneList.values():
             rn = self.repoBaseName(repo)
+
+            print("")
+            print(c.y+"  Pulling repository ", c.g0, repo.ssh_url, c.reset)
+            print("")
+            print("")
+
+
             repos.run("git clone %s %s" % (repo.ssh_url, rn))
+            print("")
+            print(c.y+"  Executing git update", c.reset)
+            print("")
+            print("")
             repos.subdir(rn).goto().run("python gitupdate.py")
             repos.goto()
 
@@ -176,6 +188,10 @@ class GitHubAccount:
         for repo in cloneList.values():
             rn = self.repoBaseName(repo)
             bd = repos.subdir(rn).goto().create("build").goto()
+            print("")
+            print(c.r+"  Configuring repository ", c.g0, repo.ssh_url, c.reset)
+            print("")
+            print("")
 
             bd.run("cmake -D%s_BUILD_TEST=ON -D%s_AUTO_RUN_TEST=ON .." %
                    (rn, rn))
@@ -222,6 +238,11 @@ def main(argc, argv):
         mgr.sync()
     elif (mgr.findOpt("ls")):
         mgr.listRepos()
+    elif (mgr.findOpt("everything")):
+        mgr.clean()
+        mgr.pull()
+        mgr.config()
+        mgr.build()
     else:
         mgr.usage()
 

@@ -104,7 +104,7 @@ class Path:
                 os.chmod(path, stat.S_IWUSR)
                 func(path)
             else:
-                raise
+                raise IOError
 
         if (os.path.isdir(self._path)):
             shutil.rmtree(self._path, onerror=onerror, ignore_errors=False)
