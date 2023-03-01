@@ -166,12 +166,16 @@ class GitHubAccount:
             print("")
             print("")
 
-            repos.run("git clone %s %s" % (repo.ssh_url, rn))
+            repos.run(self.CLONE_CMD % (repo.ssh_url, rn))
             print("")
             print(c.y + "  Executing git update", c.reset)
             print("")
             print("")
-            repos.subdir(rn).goto().run("python gitupdate.py")
+            
+            repoDir = repos.subdir(rn)
+            repoDir.goto()
+            repoDir.run("git pull")
+            repoDir.run("python gitupdate.py")
             repos.goto()
 
     def sync(self):
